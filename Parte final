@@ -27,7 +27,7 @@
 LiquidCrystal lcd(rs, en, d0, d1, d2, d3, d4, d5, d6, d7);
 
 // ==== Canales PWM para ESP32 ====
-#define PWM_CH_ROJO 0
+#define PWM_CH_ROJO 0 // se anaden los canales para controlar los leds por PWM
 #define PWM_CH_VERDE 1
 #define PWM_CH_AZUL 2
 #define PWM_FREQ 5000
@@ -45,25 +45,25 @@ void setup() {
   lcd.print("Laboratorio UART");
 
   // Configurar PWM para LEDs
-  ledcSetup(PWM_CH_ROJO, PWM_FREQ, PWM_RES);
+  ledcSetup(PWM_CH_ROJO, PWM_FREQ, PWM_RES); //agrego los leds frecuencia y resolucion
   ledcSetup(PWM_CH_VERDE, PWM_FREQ, PWM_RES);
   ledcSetup(PWM_CH_AZUL, PWM_FREQ, PWM_RES);
 
   // Asociar pines
-  ledcAttachPin(LED_ROJO, PWM_CH_ROJO);
+  ledcAttachPin(LED_ROJO, PWM_CH_ROJO); //se los agrego al led correspondiente
   ledcAttachPin(LED_VERDE, PWM_CH_VERDE);
   ledcAttachPin(LED_AZUL, PWM_CH_AZUL);
 
   // Estado inicial
-  ledcWrite(PWM_CH_AZUL, 0);
+  ledcWrite(PWM_CH_AZUL, 0); //canal para el azul
 }
 
 void loop() {
   // ==== PARTE A: Lectura de potenciómetros ====
-  int lecturaRojo = analogRead(POT_ROJO);
+  int lecturaRojo = analogRead(POT_ROJO); // los potenciometros son analogos por lo que debo convertirlos a digital
   int lecturaVerde = analogRead(POT_VERDE);
 
-  uint8_t valorRojo = map(lecturaRojo, 0, 4095, 0, 255);
+  uint8_t valorRojo = map(lecturaRojo, 0, 4095, 0, 255); //hago map para saber la escala a la que convierte los valores del pot en valores del PWM
   uint8_t valorVerde = map(lecturaVerde, 0, 4095, 0, 255);
 
   // Actualizar LEDs rojo y verde
@@ -71,17 +71,17 @@ void loop() {
   ledcWrite(PWM_CH_VERDE, valorVerde);
 
   // ==== PARTE B: Lectura UART para LED azul ====
-  if (Serial.available() > 0) {
+  if (Serial.available() > 0) { //lee si hay senal disponible
     char comando = Serial.read();
 
-    if (comando == '+') {
+    if (comando == '+') { // aumenta el contador siempre y cuando sea menor de 255
       if (valorAzul < 255) valorAzul++;
     } 
-    else if (comando == '-') {
+    else if (comando == '-') { //disminuye el valor siempre que sea mayor a 0
       if (valorAzul > 0) valorAzul--;
     }
 
-    // Actualizar LED azul directamente
+    // Actualizar LED azul directamente 
     ledcWrite(PWM_CH_AZUL, valorAzul);
 
     // Enviar nuevo valor por UART
