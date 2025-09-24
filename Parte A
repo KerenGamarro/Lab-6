@@ -1,4 +1,5 @@
-#include <Arduino.h>
+//Parte A lab 6 controlando leds con potenciometros y mandandolos a la pantalla
+#include <Arduino.h> //Incluyo las librerias para usar arduino y la pantalla
 #include <LiquidCrystal.h>
 
 // ==== Pines LCD en modo 8 bits ====
@@ -18,7 +19,7 @@
 #define POT_VERDE 34  // Potenciómetro para LED verde
 
 // ==== LEDs RGB (PWM) ====
-#define LED_AZUL 13
+#define LED_AZUL 13 //el lab pide canales PWM despues entonces los puse de una vez
 #define LED_VERDE 12
 #define LED_ROJO 14
 
@@ -26,14 +27,14 @@
 LiquidCrystal lcd(rs, en, d0, d1, d2, d3, d4, d5, d6, d7);
 
 // ==== Canales PWM para ESP32 ====
-#define PWM_CH_ROJO 0
+#define PWM_CH_ROJO 0 //se asignan canales distintos para cada uno
 #define PWM_CH_VERDE 1
 #define PWM_CH_AZUL 2
-#define PWM_FREQ 5000
+#define PWM_FREQ 5000 //frecuencia de lectura y la resolución que pide de 8 bits
 #define PWM_RES 8   // 8 bits (0-255)
 
 void setup() {
-  Serial.begin(115200);   // Comunicación UART
+  Serial.begin(115200);   // Comunicación UART, inicia la comunicacion para la pantalla
 
   // Inicializar LCD
   lcd.begin(16, 2);
