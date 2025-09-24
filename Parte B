@@ -1,0 +1,118 @@
+// Parte B hacer contador con la terminal serial
+#include <Arduino.h>
+#include <LiquidCrystal.h>
+
+// ==== Pines LCD en modo 8 bits ====
+#define rs 15
+#define en 2
+#define d0 4
+#define d1 16   // RX2
+#define d2 17   // TX2
+#define d3 5
+#define d4 18
+#define d5 19
+#define d6 21
+#define d7 27
+
+// ==== Potenciómetros ====
+#define POT_ROJO 35   // Potenciómetro para LED rojo
+#define POT_VERDE 34  // Potenciómetro para LED verde
+
+// ==== LEDs RGB (PWM) ====
+#define LED_AZUL 13
+#define LED_VERDE 12
+#define LED_ROJO 14
+
+// ==== Objeto LCD ====
+LiquidCrystal lcd(rs, en, d0, d1, d2, d3, d4, d5, d6, d7);
+
+// ==== Canales PWM para ESP32 ====
+#define PWM_CH_ROJO 0
+#define PWM_CH_VERDE 1
+#define PWM_CH_AZUL 2
+#define PWM_FREQ 5000
+#define PWM_RES 8   // 8 bits (0-255)
+
+// ==== Variables globales ====
+uint8_t valorAzulNivel = 0;   // Contador de 0–10
+const uint8_t NIVEL_MAX = 10; // Tope
+
+void setup() {
+  Serial.begin(115200);   // Comunicación UART
+
+  // Inicializar LCD
+  lcd.begin(16, 2);
+  lcd.clear();
+  lcd.print("Laboratorio UART");
+
+  // Configurar PWM para LEDs
+  ledcSetup(PWM_CH_ROJO, PWM_FREQ, PWM_RES);
+  ledcSetup(PWM_CH_VERDE, PWM_FREQ, PWM_RES);
+  ledcSetup(PWM_CH_AZUL, PWM_FREQ, PWM_RES);
+
+  // Asociar pines
+  ledcAttachPin(LED_ROJO, PWM_CH_ROJO);
+  ledcAttachPin(LED_VERDE, PWM_CH_VERDE);
+  ledcAttachPin(LED_AZUL, PWM_CH_AZUL);
+
+  // Estado inicial
+  ledcWrite(PWM_CH_AZUL, 0);
+}
+
+void loop() {
+  // ==== PARTE A: Lectura de potenciómetros ====
+  int lecturaRojo = analogRead(POT_ROJO);
+  int lecturaVerde = analogRead(POT_VERDE);
+
+  uint8_t valorRojo = map(lecturaRojo, 0, 4095, 0, 255);
+  uint8_t valorVerde = map(lecturaVerde, 0, 4095, 0, 255);
+
+  // Actualizar LEDs rojo y verde
+  ledcWrite(PWM_CH_ROJO, valorRojo);
+  ledcWrite(PWM_CH_VERDE, valorVerde);
+
+  // ==== PARTE B: Lectura UART para LED azul ====
+  if (Serial.available() > 0) {
+    char comando = Serial.read();
+
+    if (comando == '+') {
+      if (valorAzulNivel < NIVEL_MAX) valorAzulNivel++;
+    } 
+    else if (comando == '-') {
+      if (valorAzulNivel > 0) valorAzulNivel--;
+    }
+
+    // Convertir nivel (0–10) a PWM (0–255)
+    uint8_t valorPWM = map(valorAzulNivel, 0, NIVEL_MAX, 0, 255);
+
+    // Actualizar LED azul
+    ledcWrite(PWM_CH_AZUL, valorPWM);
+
+    // Enviar nuevo valor por UART
+    Serial.print("Nivel Azul: ");
+    Serial.print(valorAzulNivel);
+    Serial.print(" (PWM=");
+    Serial.print(valorPWM);
+    Serial.println(")");
+  }
+
+  // ==== Mostrar valores en LCD ====
+  lcd.setCursor(0, 1);
+  lcd.print("R:");
+  lcd.print(valorRojo);
+  lcd.print(" V:");
+  lcd.print(valorVerde);
+  lcd.print(" B:");
+  lcd.print(valorAzulNivel);
+  lcd.print("   ");  // Limpiar sobrantes
+
+  // ==== Enviar Rojo y Verde a la terminal ====
+  Serial.print("Intensidad Rojo: ");
+  Serial.print(valorRojo);
+  Serial.print("\tIntensidad Verde: ");
+  Serial.print(valorVerde);
+  Serial.print("\tNivel Azul: ");
+  Serial.println(valorAzulNivel);
+
+  delay(300);
+}
