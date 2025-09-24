@@ -1,4 +1,4 @@
-//Lab 6 completo con monitor serial, pantalla LCD y canales de PWM para los leds
+//Parte final igual que la anterior pero el tope es 255 y el minimo 0 sin tope digital
 #include <Arduino.h>
 #include <LiquidCrystal.h>
 
@@ -34,8 +34,7 @@ LiquidCrystal lcd(rs, en, d0, d1, d2, d3, d4, d5, d6, d7);
 #define PWM_RES 8   // 8 bits (0-255)
 
 // ==== Variables globales ====
-uint8_t valorAzulNivel = 0;   // Contador de 0–10 estas variables reciben sin signo y la de nivel max no puede modificarse
-const uint8_t NIVEL_MAX = 10; // Tope
+uint8_t valorAzul = 0;   // Contador de 0–255
 
 void setup() {
   Serial.begin(115200);   // Comunicación UART
@@ -61,10 +60,10 @@ void setup() {
 
 void loop() {
   // ==== PARTE A: Lectura de potenciómetros ====
-  int lecturaRojo = analogRead(POT_ROJO); //los pot leen analogo entonces debo usar analog read para luego poder leer valores digitales
+  int lecturaRojo = analogRead(POT_ROJO);
   int lecturaVerde = analogRead(POT_VERDE);
 
-  uint8_t valorRojo = map(lecturaRojo, 0, 4095, 0, 255); //uso map para darle la escala entre lo que lee el pot y lo que lee el led
+  uint8_t valorRojo = map(lecturaRojo, 0, 4095, 0, 255);
   uint8_t valorVerde = map(lecturaVerde, 0, 4095, 0, 255);
 
   // Actualizar LEDs rojo y verde
@@ -72,28 +71,22 @@ void loop() {
   ledcWrite(PWM_CH_VERDE, valorVerde);
 
   // ==== PARTE B: Lectura UART para LED azul ====
-  if (Serial.available() > 0) { //lee si hay senal disponible
+  if (Serial.available() > 0) {
     char comando = Serial.read();
 
-    if (comando == '+') { //si recibe un mas aumenta el contador siempre y cuando sea menor que el nivel max
-      if (valorAzulNivel < NIVEL_MAX) valorAzulNivel++;
+    if (comando == '+') {
+      if (valorAzul < 255) valorAzul++;
     } 
-    else if (comando == '-') { // lo mismo aqui pero al reves con menos
-      if (valorAzulNivel > 0) valorAzulNivel--;
+    else if (comando == '-') {
+      if (valorAzul > 0) valorAzul--;
     }
 
-    // Convertir nivel (0–10) a PWM (0–255) 
-    uint8_t valorPWM = map(valorAzulNivel, 0, NIVEL_MAX, 0, 255);
-
-    // Actualizar LED azul
-    ledcWrite(PWM_CH_AZUL, valorPWM);
+    // Actualizar LED azul directamente
+    ledcWrite(PWM_CH_AZUL, valorAzul);
 
     // Enviar nuevo valor por UART
     Serial.print("Nivel Azul: ");
-    Serial.print(valorAzulNivel);
-    Serial.print(" (PWM=");
-    Serial.print(valorPWM);
-    Serial.println(")");
+    Serial.println(valorAzul);
   }
 
   // ==== Mostrar valores en LCD ====
@@ -103,7 +96,7 @@ void loop() {
   lcd.print(" V:");
   lcd.print(valorVerde);
   lcd.print(" B:");
-  lcd.print(valorAzulNivel);
+  lcd.print(valorAzul);
   lcd.print("   ");  // Limpiar sobrantes
 
   // ==== Enviar Rojo y Verde a la terminal ====
@@ -112,7 +105,7 @@ void loop() {
   Serial.print("\tIntensidad Verde: ");
   Serial.print(valorVerde);
   Serial.print("\tNivel Azul: ");
-  Serial.println(valorAzulNivel);
+  Serial.println(valorAzul);
 
   delay(300);
 }
